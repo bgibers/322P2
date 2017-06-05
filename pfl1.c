@@ -6,6 +6,7 @@ Operating systems
 #include "pfl1.h"
 #include <stdlib.h>
 
+void coal(struct region_node *ptr);
 /*get_free_node() has no input parameters. It should search through the
 node array for the first node with the node_state == free and return the
 address of this node. If there are no free nodes, then get_free_node()
@@ -144,10 +145,67 @@ the outcome of the call:
       correspond to the staring address of an existing memory region*/
 int release(unsigned char *ptr)
 {
-	return 0;
+	struct region_node* reg_ptr = head->next;
+	int runner = 0;
+	while(runner == 0)
+	{
+		if(reg_ptr != head && reg_ptr != NULL)
+		{
+			if(reg_ptr->start_address != ptr)
+			{
+				reg_ptr = reg_ptr->next;
+				continue;
+			}
+			else
+			{
+				if(reg_ptr->region_state != FREE)
+				{
+					reg_ptr->region_state = FREE;
+					//coalesce
+					coal(reg_ptr);
+					runner = 1;//end loop
+					return 0; // call to release success
+				}
+				else
+				{	
+					//coalesce
+					coal(reg_ptr);
+					runner = 1;//end loop
+					return 1;// input parameter pointed to existing region
+				}
+			}
+		}
+		else {runner=1;return 2;}
+	}
+	return 2;
 }
 
+void coal(struct region_node *ptr)
+{
+	int runner = 0;
+	while(runner == 0)
+	{
+		if(ptr->next->region_state == FREE) //test if not free
+		{
+			return_node(ptr->next);
+			ptr->size = ptr->size + ptr->next->size;
+			ptr->next->next->prev = ptr;
+			ptr->next = ptr->next->next;
+			continue; //lets loop back through 
+		}
+		else if(ptr->prev->region_state == FREE)
+		{
+			return_node(ptr);
+			ptr->prev->size = ptr->size + ptr->prev->size;
+			ptr->next->prev = ptr->prev;
+			ptr->prev->next = ptr->next;
+			ptr = ptr->prev;
+			continue;
+		}
 
+		runner=1; //end loop prob shouldve used recursion 
+	}
+}
 
 
 
